@@ -1,0 +1,1 @@
+# ds18b20-mongoose-os-lib

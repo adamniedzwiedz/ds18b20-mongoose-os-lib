@@ -38,9 +38,9 @@ struct ds18b20_data {
 struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   struct mgos_ds18b20* ds18b20 = calloc(1, sizeof(*ds18b20));
   
-  //char data_str[2*ROM_LEN+1] = {0}; 
+  char data_str[2*ROM_LEN+1] = {0}; 
   uint8_t rom[ROM_LEN];
-  //uint8_t crc;
+  uint8_t crc;
 
   if (ds18b20 == NULL) {
     LOG(LL_ERROR, ("Cannot create mgos_ds18b20 structure.\r\n"));
@@ -64,7 +64,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
     free(ds18b20);
     return NULL;
   }
-/*
+
   cs_to_hex(data_str, rom, ROM_LEN); 
   LOG(LL_DEBUG, ("Found rom: 0x%s\r\n", data_str));
 
@@ -76,7 +76,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
     free(ds18b20);
     return NULL;
   }
-
+/*
   ds18b20->addr = calloc(ROM_LEN, sizeof(uint8_t));
   if (ds18b20->addr == NULL) {
     LOG(LL_ERROR, ("Cannot create storage for ROM\r\n"));

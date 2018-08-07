@@ -1,0 +1,21 @@
+author: adamniedzwiedz <niedzwiedz.adam@gmail.com>
+type: lib
+description: DS18B20 sensor library powering with an external supply
+name: ds18b20-lib
+version: 1.0
+
+sources:
+  - src
+
+includes:
+  - include
+
+tags:
+  - c
+  - hw
+  - ds18b20
+  
+libs:
+  - origin: https://github.com/mongoose-os-libs/onewire
+
+manifest_version: 2017-09-29

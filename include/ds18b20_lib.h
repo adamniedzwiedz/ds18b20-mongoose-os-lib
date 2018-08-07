@@ -17,7 +17,10 @@ enum ds18b20_resolution {
   DS18B20_12_BIT = 3,
 };
 
-struct mgos_ds18b20;
+struct mgos_ds18b20 {
+  struct mgos_onewire* one_wire;
+  uint8_t* addr;
+};
 
 struct ds18b20_scratchpad {
   float temperature;

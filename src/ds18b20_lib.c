@@ -30,11 +30,6 @@
 #define ROM_CRC 7
 #define ROM_LEN 8
 
-struct mgos_ds18b20 {
-  struct mgos_onewire* one_wire;
-  uint8_t* addr;
-};
-
 struct ds18b20_data {
   ds18b20_callback cb;
   struct mgos_ds18b20 *ds18b20;

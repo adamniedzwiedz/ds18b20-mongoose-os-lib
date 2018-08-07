@@ -39,7 +39,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   struct mgos_ds18b20* ds18b20 = calloc(1, sizeof(*ds18b20));
   
   //char data_str[2*ROM_LEN+1] = {0}; 
-  //uint8_t rom[ROM_LEN];
+  uint8_t rom[ROM_LEN];
   //uint8_t crc;
 
   if (ds18b20 == NULL) {
@@ -54,7 +54,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
     free(ds18b20);
     return NULL;
   }
-  /*
+  
   LOG(LL_DEBUG, ("Reset search\r\n"));
   mgos_onewire_search_clean(ds18b20->one_wire);
   
@@ -64,7 +64,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
     free(ds18b20);
     return NULL;
   }
-
+/*
   cs_to_hex(data_str, rom, ROM_LEN); 
   LOG(LL_DEBUG, ("Found rom: 0x%s\r\n", data_str));
 

@@ -40,7 +40,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   
   //char data_str[2*ROM_LEN+1] = {0}; 
   //uint8_t rom[ROM_LEN];
-  uint8_t crc;
+  //uint8_t crc;
 
   if (ds18b20 == NULL) {
     LOG(LL_ERROR, ("Cannot create mgos_ds18b20 structure.\r\n"));

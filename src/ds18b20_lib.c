@@ -37,6 +37,7 @@ struct ds18b20_data {
 
 struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   struct mgos_ds18b20* ds18b20 = calloc(1, sizeof(*ds18b20));
+  /*
   char data_str[2*ROM_LEN+1] = {0}; 
   uint8_t rom[ROM_LEN];
   uint8_t crc;
@@ -83,5 +84,6 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
     return NULL;
   }
   memcpy(ds18b20->addr, rom, ROM_LEN);
+  */
   return ds18b20;
 }

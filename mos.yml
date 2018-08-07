@@ -1,7 +1,6 @@
 author: adamniedzwiedz <niedzwiedz.adam@gmail.com>
 type: lib
 description: DS18B20 sensor library powering with an external supply
-name: ds18b20-lib
 version: 1.0
 
 sources:

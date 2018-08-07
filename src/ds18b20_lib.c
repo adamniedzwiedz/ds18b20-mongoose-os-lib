@@ -76,7 +76,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
     free(ds18b20);
     return NULL;
   }
-/*
+
   ds18b20->addr = calloc(ROM_LEN, sizeof(uint8_t));
   if (ds18b20->addr == NULL) {
     LOG(LL_ERROR, ("Cannot create storage for ROM\r\n"));
@@ -84,6 +84,6 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
     return NULL;
   }
   memcpy(ds18b20->addr, rom, ROM_LEN);
-  */
+  
   return ds18b20;
 }

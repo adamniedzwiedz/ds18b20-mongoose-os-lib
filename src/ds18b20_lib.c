@@ -41,14 +41,11 @@ struct mgos_ds18b20 {
 };
 
 void ds18b20_free(struct mgos_ds18b20* ds18b20) {
-  if (ds18b20 != NULL) {
-    if (ds18b20->addr != NULL) {
-      free(ds18b20->addr);
-    }
-    if (ds18b20->one_wire != NULL) {
-      free(ds18b20->one_wire);
-    }
-    free(ds18b20);
+  if (ds18b20->addr != NULL) {
+    free(ds18b20->addr);
+  }
+  if (ds18b20->one_wire != NULL) {
+    free(ds18b20->one_wire);
   }
 }
 
@@ -78,6 +75,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   LOG(LL_DEBUG, ("Search device...\r\n"));
   if (!mgos_onewire_next(ds18b20->one_wire, rom, 0)) {
     LOG(LL_ERROR, ("Onewire device has not been found!\r\n"));
+    ds18b20_free(ds18b20);
     free(ds18b20);
     return NULL;
   }
@@ -90,6 +88,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
 
   if (crc != rom[ROM_CRC]) {
     LOG(LL_ERROR, ("CRC mismatch \r\n"));
+    ds18b20_free(ds18b20);
     free(ds18b20);
     return NULL;
   }
@@ -97,6 +96,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   ds18b20->addr = calloc(ROM_LEN, sizeof(uint8_t));
   if (ds18b20->addr == NULL) {
     LOG(LL_ERROR, ("Cannot create storage for ROM\r\n"));
+    ds18b20_free(ds18b20);
     free(ds18b20);
     return NULL;
   }

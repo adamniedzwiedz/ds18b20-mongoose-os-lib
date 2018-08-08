@@ -43,9 +43,11 @@ struct mgos_ds18b20 {
 void ds18b20_free(struct mgos_ds18b20* ds18b20) {
   if (ds18b20->addr != NULL) {
     free(ds18b20->addr);
+    ds18b20->addr = NULL;
   }
   if (ds18b20->one_wire != NULL) {
     free(ds18b20->one_wire);
+    ds18b20->one_wire = NULL;
   }
 }
 

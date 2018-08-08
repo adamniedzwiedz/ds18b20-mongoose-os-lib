@@ -35,9 +35,14 @@ struct ds18b20_data {
   struct mgos_ds18b20 *ds18b20;
 };
 
-void mgos_ds18b20* ds18b20_free(struct mgos_ds18b20* ds18b20) {
+struct mgos_ds18b20 {
+  struct mgos_onewire* one_wire;
+  uint8_t* addr;
+};
+
+void ds18b20_free(struct mgos_ds18b20* ds18b20) {
   if (ds18b20 != NULL) {
-    if (ds18b20-> != NULL) {
+    if (ds18b20->addr != NULL) {
       free(ds18b20->addr);
     }
     if (ds18b20->one_wire != NULL) {

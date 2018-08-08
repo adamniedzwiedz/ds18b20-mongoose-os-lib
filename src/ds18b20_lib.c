@@ -23,6 +23,7 @@
 #define SCRATCH_SIGN_MASK(x) (x & 0xF8)
 #define SCRATCH_TEMP_MSB_MASK(x)  ((x & 0x07) << 4)
 #define SCRATCH_TEMP_LSB_SHIFT(x) (x >> 4) 
+// avoid multiplication it causes numeric errors
 #define SCRATCH_TEMP_FRACT_MASK(x) (((x & 0x08) ? 0.5 : 0.0) + ((x & 0x04) ? 0.25 : 0.0) + ((x & 0x02) ? 0.125 : 0.0) + ((x & 0x01) ? 0.0625 : 0.0))
 #define SCRATCH_RESOLUTION_MASK(x) (x >> 5)
 #define SCRATCH_CONFIG_MASK(x) ((x << 5) | 0x1F)
@@ -105,4 +106,80 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   memcpy(ds18b20->addr, rom, ROM_LEN);
   
   return ds18b20;
+}
+
+struct ds18b20_scratchpad* ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20) {
+  struct ds18b20_scratchpad* scratchpad = calloc(1, sizeof(*scratchpad));
+  char data_str[2*SCRATCH_LEN+1] = {0}; 
+  uint8_t buf[SCRATCH_LEN];
+  uint8_t crc;
+  int8_t temp_int;
+  float temp_frac;
+
+  if (ds18b20 == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 cannot be NULL\r\n"));
+    return NULL;
+  }
+
+  if (ds18b20->addr == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 has no address\r\n"));
+    return NULL;
+  }
+
+  if (ds18b20->one_wire == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 has no one wire object\r\n"));
+    return NULL;
+  }
+
+  if (scratchpad == NULL) {
+    LOG(LL_ERROR, ("Cannot create ds18b20_scratchpad structure.\r\n"));
+    return NULL;
+  }
+
+  if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
+    LOG(LL_ERROR, ("Reseting the Data line has failed.\r\n"));
+    free(scratchpad);
+    return NULL;
+  }
+
+  LOG(LL_DEBUG, ("Sending read scratch (0x%02X) command\r\n", READSCRATCH_CMD));
+  mgos_onewire_select(ds18b20->one_wire, ds18b20->addr);
+  mgos_onewire_write(ds18b20->one_wire, READSCRATCH_CMD);
+  
+  LOG(LL_DEBUG, ("Reading bytes...\r\n"));
+  mgos_onewire_read_bytes(ds18b20->one_wire, buf, SCRATCH_LEN);
+  
+  cs_to_hex(data_str, buf, SCRATCH_LEN); 
+  LOG(LL_DEBUG, ("Read scratchpad: %s\r\n", data_str));
+
+  crc = mgos_onewire_crc8(buf, SCRATCH_LEN-1);
+  LOG(LL_DEBUG, ("CRC: (0x%02X)\r\n", crc));
+
+  if (crc != buf[SCRATCH_CRC]) {
+    LOG(LL_ERROR, ("CRC mismatch \r\n"));
+    free(scratchpad);
+    return NULL;
+  }
+
+  if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
+    LOG(LL_ERROR, ("Reseting the Data line at the end has failed.\r\n"));
+    free(scratchpad);
+    return NULL;
+  }
+
+  temp_int = (SCRATCH_TEMP_MSB_MASK(buf[SCRATCH_TEMP_MSB]) + SCRATCH_TEMP_LSB_SHIFT(buf[SCRATCH_TEMP_LSB]));
+  // avoid multiplication it causes numeric errors
+  if (SCRATCH_SIGN_MASK(buf[SCRATCH_TEMP_MSB])) {
+    temp_int = -temp_int;
+  }
+
+  temp_frac = SCRATCH_TEMP_FRACT_MASK(buf[SCRATCH_TEMP_LSB]);
+  LOG(LL_DEBUG, ("integer temp: %d\r\n", temp_int));
+  LOG(LL_DEBUG, ("frac temp: %f\r\n", temp_frac));
+  scratchpad->temperature = (float)temp_int + temp_frac;
+  scratchpad->alarm_high = buf[SCRATCH_ALARM_HIGH];
+  scratchpad->alarm_low = buf[SCRATCH_ALARM_LOW];
+  scratchpad->resolution = SCRATCH_RESOLUTION_MASK(buf[SCRATCH_CONFIG]);
+
+  return scratchpad;
 }

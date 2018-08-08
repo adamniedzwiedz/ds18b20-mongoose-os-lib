@@ -42,14 +42,18 @@ struct mgos_ds18b20 {
 };
 
 void ds18b20_free(struct mgos_ds18b20* ds18b20) {
-  if (ds18b20->addr != NULL) {
-    free(ds18b20->addr);
-    ds18b20->addr = NULL;
-  }
-  if (ds18b20->one_wire != NULL) {
-    free(ds18b20->one_wire);
-    ds18b20->one_wire = NULL;
-  }
+  if (ds18b20 != NULL) {
+    if (ds18b20->addr != NULL) {
+      free(ds18b20->addr);
+      ds18b20->addr = NULL;
+    }
+    if (ds18b20->one_wire != NULL) {
+      free(ds18b20->one_wire);
+      ds18b20->one_wire = NULL;
+    }
+    free(ds18b20);
+    ds18b20 = NULL;
+  } 
 }
 
 struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
@@ -79,7 +83,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   if (!mgos_onewire_next(ds18b20->one_wire, rom, 0)) {
     LOG(LL_ERROR, ("Onewire device has not been found!\r\n"));
     ds18b20_free(ds18b20);
-    free(ds18b20);
+    //free(ds18b20);
     return NULL;
   }
 
@@ -92,7 +96,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   if (crc != rom[ROM_CRC]) {
     LOG(LL_ERROR, ("CRC mismatch \r\n"));
     ds18b20_free(ds18b20);
-    free(ds18b20);
+    //free(ds18b20);
     return NULL;
   }
 
@@ -100,7 +104,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   if (ds18b20->addr == NULL) {
     LOG(LL_ERROR, ("Cannot create storage for ROM\r\n"));
     ds18b20_free(ds18b20);
-    free(ds18b20);
+    //free(ds18b20);
     return NULL;
   }
   memcpy(ds18b20->addr, rom, ROM_LEN);
@@ -108,8 +112,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   return ds18b20;
 }
 
-struct ds18b20_scratchpad* ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20) {
-  struct ds18b20_scratchpad* scratchpad = calloc(1, sizeof(*scratchpad));
+bool ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scratchpad* scratchpad) {
   char data_str[2*SCRATCH_LEN+1] = {0}; 
   uint8_t buf[SCRATCH_LEN];
   uint8_t crc;
@@ -118,28 +121,27 @@ struct ds18b20_scratchpad* ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20)
 
   if (ds18b20 == NULL) {
     LOG(LL_ERROR, ("parameter ds18b20 cannot be NULL\r\n"));
-    return NULL;
+    return false;
   }
 
   if (ds18b20->addr == NULL) {
     LOG(LL_ERROR, ("parameter ds18b20 has no address\r\n"));
-    return NULL;
+    return false;
   }
 
   if (ds18b20->one_wire == NULL) {
     LOG(LL_ERROR, ("parameter ds18b20 has no one wire object\r\n"));
-    return NULL;
+    return false;
   }
 
   if (scratchpad == NULL) {
-    LOG(LL_ERROR, ("Cannot create ds18b20_scratchpad structure.\r\n"));
-    return NULL;
+    LOG(LL_ERROR, ("parameter scratchpad cannot be NULL.\r\n"));
+    return false;
   }
 
   if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
     LOG(LL_ERROR, ("Reseting the Data line has failed.\r\n"));
-    free(scratchpad);
-    return NULL;
+    return false;
   }
 
   LOG(LL_DEBUG, ("Sending read scratch (0x%02X) command\r\n", READSCRATCH_CMD));
@@ -157,14 +159,12 @@ struct ds18b20_scratchpad* ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20)
 
   if (crc != buf[SCRATCH_CRC]) {
     LOG(LL_ERROR, ("CRC mismatch \r\n"));
-    free(scratchpad);
-    return NULL;
+    return false;
   }
 
   if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
     LOG(LL_ERROR, ("Reseting the Data line at the end has failed.\r\n"));
-    free(scratchpad);
-    return NULL;
+    return false;
   }
 
   temp_int = (SCRATCH_TEMP_MSB_MASK(buf[SCRATCH_TEMP_MSB]) + SCRATCH_TEMP_LSB_SHIFT(buf[SCRATCH_TEMP_LSB]));
@@ -181,5 +181,5 @@ struct ds18b20_scratchpad* ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20)
   scratchpad->alarm_low = buf[SCRATCH_ALARM_LOW];
   scratchpad->resolution = SCRATCH_RESOLUTION_MASK(buf[SCRATCH_CONFIG]);
 
-  return scratchpad;
+  return true;
 }

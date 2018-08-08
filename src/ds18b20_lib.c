@@ -35,6 +35,18 @@ struct ds18b20_data {
   struct mgos_ds18b20 *ds18b20;
 };
 
+void mgos_ds18b20* ds18b20_free(struct mgos_ds18b20* ds18b20) {
+  if (ds18b20 != NULL) {
+    if (ds18b20-> != NULL) {
+      free(ds18b20->addr);
+    }
+    if (ds18b20->one_wire != NULL) {
+      free(ds18b20->one_wire);
+    }
+    free(ds18b20);
+  }
+}
+
 struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   struct mgos_ds18b20* ds18b20 = calloc(1, sizeof(*ds18b20));
   

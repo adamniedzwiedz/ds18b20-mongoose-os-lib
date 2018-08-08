@@ -33,6 +33,7 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin);
 //struct ds18b20_scratchpad* ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20);
 //bool ds18b20_write_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scratchpad scratchpad);
 //bool ds18b20_start_conversion(struct mgos_ds18b20* ds18b20, ds18b20_callback ds18b20_cb);
+void mgos_ds18b20* ds18b20_free(struct mgos_ds18b20* ds18b20);
 
 #ifdef __cplusplus
 }

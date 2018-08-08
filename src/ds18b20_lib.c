@@ -55,6 +55,24 @@ void ds18b20_free(struct mgos_ds18b20* ds18b20) {
   } 
 }
 
+bool check_params(struct mgos_ds18b20* ds18b20) {
+  if (ds18b20 == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 cannot be NULL\r\n"));
+    return false;
+  }
+
+  if (ds18b20->addr == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 has no address\r\n"));
+    return false;
+  }
+
+  if (ds18b20->one_wire == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 has no one wire object\r\n"));
+    return false;
+  }
+  return true;
+}
+
 struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   struct mgos_ds18b20* ds18b20 = calloc(1, sizeof(*ds18b20));
   
@@ -115,18 +133,7 @@ bool ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scratc
   int8_t temp_int;
   float temp_frac;
 
-  if (ds18b20 == NULL) {
-    LOG(LL_ERROR, ("parameter ds18b20 cannot be NULL\r\n"));
-    return false;
-  }
-
-  if (ds18b20->addr == NULL) {
-    LOG(LL_ERROR, ("parameter ds18b20 has no address\r\n"));
-    return false;
-  }
-
-  if (ds18b20->one_wire == NULL) {
-    LOG(LL_ERROR, ("parameter ds18b20 has no one wire object\r\n"));
+  if (!check_params(ds18b20)) {
     return false;
   }
 
@@ -181,18 +188,7 @@ bool ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scratc
 }
 
 bool ds18b20_write_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scratchpad scratchpad) {
-  if (ds18b20 == NULL) {
-    LOG(LL_ERROR, ("parameter ds18b20 cannot be NULL\r\n"));
-    return false;
-  }
-
-  if (ds18b20->addr == NULL) {
-    LOG(LL_ERROR, ("parameter ds18b20 has no address\r\n"));
-    return false;
-  }
-
-  if (ds18b20->one_wire == NULL) {
-    LOG(LL_ERROR, ("parameter ds18b20 has no one wire object\r\n"));
+  if (!check_params(ds18b20)) {
     return false;
   }
 
@@ -229,5 +225,65 @@ bool ds18b20_write_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scrat
     LOG(LL_ERROR, ("Reseting the Data line at the end has failed.\r\n"));
     return false;
   }
+  return true;
+}
+
+static void conversion_cb(void *arg) {
+  struct ds18b20_data* data = arg;
+  struct ds18b20_scratchpad scratchpad;
+
+  if (data == NULL) {
+    LOG(LL_ERROR, ("NULL data argument in conversion callback.\r\n"));
+    return;
+  }
+  if (data->ds18b20 == NULL) {
+    LOG(LL_ERROR, ("NULL ds18b20 argument in conversion callback.\r\n"));
+    free(data);
+    return;
+  }
+  if (data->ds18b20->one_wire == NULL) {
+    LOG(LL_ERROR, ("NULL one_wire argument in conversion callback.\r\n"));
+    free(data);
+    return;
+  }
+  if (!mgos_onewire_read_bit(data->ds18b20->one_wire)) {
+    mgos_set_timer(100 /* ms */, false /* repeat */, conversion_cb, data);
+  } else if (data->cb != NULL) {
+    if (!ds18b20_read_scratchpad(data->ds18b20, &scratchpad)) {
+      LOG(LL_ERROR, ("Reading scratchpad has failed\r\n"));
+      free(data);
+      return;
+    }
+    data->cb(&scratchpad.temperature);
+    free(data);
+  }
+}
+
+bool ds18b20_start_conversion(struct mgos_ds18b20* ds18b20, ds18b20_callback ds18b20_cb) {
+  struct ds18b20_data *data = calloc(1, sizeof(*data));
+  
+  if (!check_params(ds18b20)) {
+    free(data);
+    return false;
+  }
+
+  if (data == NULL) {
+    LOG(LL_ERROR, ("Cannot create ds18b20 data structure\r\n"));
+    return false;
+  }
+  
+  if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
+    LOG(LL_ERROR, ("Reseting the Data line has failed.\r\n"));
+    free(data);
+    return false;
+  }
+
+  LOG(LL_DEBUG, ("Sending convert (0x%02X) command\r\n", CONVERT_CMD));
+  mgos_onewire_select(ds18b20->one_wire, ds18b20->addr);
+  mgos_onewire_write(ds18b20->one_wire, CONVERT_CMD);
+
+  data->ds18b20 = ds18b20;
+  data->cb = ds18b20_cb;
+  mgos_set_timer(100 /* ms */, false /* repeat */, conversion_cb, data);
   return true;
 }

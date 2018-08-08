@@ -52,7 +52,6 @@ void ds18b20_free(struct mgos_ds18b20* ds18b20) {
       ds18b20->one_wire = NULL;
     }
     free(ds18b20);
-    ds18b20 = NULL;
   } 
 }
 
@@ -83,7 +82,6 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   if (!mgos_onewire_next(ds18b20->one_wire, rom, 0)) {
     LOG(LL_ERROR, ("Onewire device has not been found!\r\n"));
     ds18b20_free(ds18b20);
-    //free(ds18b20);
     return NULL;
   }
 
@@ -96,7 +94,6 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   if (crc != rom[ROM_CRC]) {
     LOG(LL_ERROR, ("CRC mismatch \r\n"));
     ds18b20_free(ds18b20);
-    //free(ds18b20);
     return NULL;
   }
 
@@ -104,7 +101,6 @@ struct mgos_ds18b20* ds18b20_create(uint8_t pin) {
   if (ds18b20->addr == NULL) {
     LOG(LL_ERROR, ("Cannot create storage for ROM\r\n"));
     ds18b20_free(ds18b20);
-    //free(ds18b20);
     return NULL;
   }
   memcpy(ds18b20->addr, rom, ROM_LEN);
@@ -181,5 +177,57 @@ bool ds18b20_read_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scratc
   scratchpad->alarm_low = buf[SCRATCH_ALARM_LOW];
   scratchpad->resolution = SCRATCH_RESOLUTION_MASK(buf[SCRATCH_CONFIG]);
 
+  return true;
+}
+
+bool ds18b20_write_scratchpad(struct mgos_ds18b20* ds18b20, struct ds18b20_scratchpad scratchpad) {
+  if (ds18b20 == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 cannot be NULL\r\n"));
+    return false;
+  }
+
+  if (ds18b20->addr == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 has no address\r\n"));
+    return false;
+  }
+
+  if (ds18b20->one_wire == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20 has no one wire object\r\n"));
+    return false;
+  }
+
+  if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
+    LOG(LL_ERROR, ("Reseting the Data line has failed.\r\n"));
+    return false;
+  }
+
+  LOG(LL_DEBUG, ("Sending write scratch (0x%02X) command\r\n", WRITESCRATCH_CMD));
+  mgos_onewire_select(ds18b20->one_wire, ds18b20->addr);
+  mgos_onewire_write(ds18b20->one_wire, WRITESCRATCH_CMD);
+  mgos_onewire_write(ds18b20->one_wire, scratchpad.alarm_high);
+  mgos_onewire_write(ds18b20->one_wire, scratchpad.alarm_low);
+  mgos_onewire_write(ds18b20->one_wire, SCRATCH_CONFIG_MASK(scratchpad.resolution));
+
+  LOG(LL_DEBUG, ("Scratchpad has been written\r\n"));
+
+  if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
+    LOG(LL_ERROR, ("Another reseting the Data line has failed.\r\n"));
+    return false;
+  }
+
+  if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
+    LOG(LL_ERROR, ("Reseting the Data line has failed.\r\n"));
+    return false;
+  }
+
+  LOG(LL_DEBUG, ("Sending copy scratch (0x%02X) command\r\n", COPYSCRATCH_CMD));
+  mgos_onewire_select(ds18b20->one_wire, ds18b20->addr);
+  mgos_onewire_write(ds18b20->one_wire, COPYSCRATCH_CMD);
+  mgos_msleep(10);
+
+  if (mgos_onewire_reset(ds18b20->one_wire) == 0) {
+    LOG(LL_ERROR, ("Reseting the Data line at the end has failed.\r\n"));
+    return false;
+  }
   return true;
 }

@@ -24,6 +24,7 @@ At the end release the memory by calling `ds18b20_free(struct mgos_ds18b20* ds18
 To start conversion use `ds18b20_start_conversion(struct mgos_ds18b20* ds18b20, ds18b20_callback ds18b20_cb)` where the second argument is a callback method where the value will be passed it when conversion is done.
 
 _Note_
+
 The library supports only external supply and it is dedicated for modules. It does NOT support parasite-powered supply and alarm searches.
 
 ## Usage

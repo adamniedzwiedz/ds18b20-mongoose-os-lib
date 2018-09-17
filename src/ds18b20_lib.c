@@ -260,8 +260,15 @@ static void conversion_cb(void *arg) {
 }
 
 bool ds18b20_start_conversion(struct mgos_ds18b20* ds18b20, ds18b20_callback ds18b20_cb) {
-  struct ds18b20_data *data = calloc(1, sizeof(*data));
+  struct ds18b20_data* data;
   
+  if (ds18b20_cb == NULL) {
+    LOG(LL_ERROR, ("parameter ds18b20_callback cannot be null\r\n"));
+    return false;
+  }
+
+  data = calloc(1, sizeof(*data));
+
   if (data == NULL) {
     LOG(LL_ERROR, ("Cannot create ds18b20 data structure\r\n"));
     return false;
